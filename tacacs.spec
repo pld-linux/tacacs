@@ -9,7 +9,7 @@ Release:	1
 Epoch:		0
 License:	BSD-like, GPL
 Group:		Networking/Daemons
-Source0:	ftp://ftp.shrubbery.net/pub/%{name}/tacacs+-%{version}.tar.gz 
+Source0:	ftp://ftp.shrubbery.net/pub/tac_plus/tacacs+-%{version}.tar.gz 
 # Source0-md5:	4979127f60f1a83c55e8a7cec285a797
 Source1:	%{name}.cfg
 Source2:	%{name}.init
