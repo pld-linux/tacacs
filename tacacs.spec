@@ -1,3 +1,5 @@
+# TODO:
+#	-devel and -static subpackages
 
 %bcond_with     skey		# with S/KEY support
 
@@ -9,7 +11,7 @@ Release:	1
 Epoch:		0
 License:	BSD-like, GPL
 Group:		Networking/Daemons
-Source0:	ftp://ftp.shrubbery.net/pub/tac_plus/tacacs+-%{version}.tar.gz 
+Source0:	ftp://ftp.shrubbery.net/pub/tac_plus/tacacs+-%{version}.tar.gz
 # Source0-md5:	4979127f60f1a83c55e8a7cec285a797
 Source1:	%{name}.cfg
 Source2:	%{name}.init
@@ -17,11 +19,12 @@ Source3:	%{name}.pam
 Source6:	%{name}.rotate
 Source8:	%{name}.sysconfig
 URL:		http://www.shrubbery.net/tac_plus/
-BuildRequires:	autoconf
-BuildRequires:	automake
+BuildRequires:	bison
+BuildRequires:	flex
 BuildRequires:	libwrap-devel
-BuildRequires:	openldap-devel >= 2.4.6
 BuildRequires:	pam-devel
+BuildRequires:	perl-base
+BuildRequires:	rpm-pythonprov
 BuildRequires:	rpmbuild(macros) >= 1.268
 %if %{with skey}
 BuildRequires:	skey-static
@@ -31,7 +34,7 @@ Requires(pre):	fileutils
 Requires:	rc-scripts
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%define		__make		/usr/bin/make -j1
+%undefine	__cxx
 
 %description
 TACACS+ daemon using with Cisco's NASs (or other vendors) for AAA
@@ -46,15 +49,15 @@ Authentication, Authorization and Accounting).
 %setup -q -n %{name}+-%{version}
 
 %build
-%configure 
+%configure
 
-%{__make} \
+%{__make} -j1 \
 	%{?with_skey:DEFINES="-DSKEY" LIBS="/usr/lib/libskey.a" INCLUDES="-I/usr/include/security/"}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 
-%{__make} install \
+%{__make} -j1 install \
 	DESTDIR=$RPM_BUILD_ROOT
 
 install -d $RPM_BUILD_ROOT{%{_sysconfdir}/tacacs,/etc/{logrotate.d,pam.d,rc.d/init.d,sysconfig}}
@@ -82,13 +85,26 @@ fi
 %doc users_guide CHANGES
 %attr(755,root,root) %{_bindir}/*
 %dir %{_sysconfdir}/tacacs
-%dir %{_datadir}/tacacs+
 %attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/tacacs/tacacs.cfg
 %config(noreplace) %verify(not md5 mtime size) /etc/logrotate.d/tacacs
 %attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) /etc/pam.d/tac_plus
 %attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) /etc/sysconfig/tacacs
 %attr(754,root,root) /etc/rc.d/init.d/tacacs
-%{_mandir}/man?/*
+%{_mandir}/man5/*
+%{_mandir}/man8/*
+%attr(755,root,root) %{_libdir}/libtacacs.so.1.*.*
+%attr(755,root,root) %ghost %{_libdir}/libtacacs.so.?
+%{_datadir}/tacacs+
+
+%if 0
+%files devel
+%defattr(644,root,root,755)
+%attr(755,root,root) %{_libdir}/libtacacs.so
+%{_libdir}/libtacacs.la
 %{_includedir}/tacacs.h
-%{_libdir}/*
-%{_datadir}/tacacs+/*
+%{_mandir}/man3/*
+
+%files static
+%defattr(644,root,root,755)
+%{_libdir}/libtacacs.a
+%endif
