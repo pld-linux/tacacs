@@ -23,7 +23,7 @@
 # Check that networking is up.
 if is_yes "${NETWORKING}"; then
 	if [ ! -f /var/lock/subsys/network -a "$1" != stop -a "$1" != status ]; then
-		msg_network_down tacacs
+		msg_network_down "TACACS+"
 		exit 1
 	fi
 else
@@ -38,29 +38,33 @@ tacacs_config="/etc/tacacs/tacacs.cfg"
 [ -z "$TACACS_DEBUG_LEVEL" ] && TACACS_DEBUG_LEVEL=0
 
 checkconfig() {
-	echo "Testing TACACS+ config"
-	/usr/bin/tac_plus -P -C "$tacacs_config" -p "$TACACS_PORT"
+	show "Testing TACACS+ config"; busy
+	local out
+	out=`/usr/bin/tac_plus -P -C "$tacacs_config" -p "$TACACS_PORT" 2>&1`
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && ok || fail || { echo "$out" >&2; [ "$1" -eq 1 ] || exit $RETVAL; }
+	
 }
 
 start() {
 	if [ ! -f /var/lock/subsys/tacacs ]; then
-		checkconfig
-		msg_starting TACACS+
+		[ "$1" -eq 0 ] || checkconfig
+		msg_starting "TACACS+"
 		daemon --pidfile /var/run/tac_plus.pid /usr/bin/tac_plus -C "$tacacs_config" -p "$TACACS_PORT" -d "$TACACS_DEBUG_LEVEL"
 		RETVAL=$?
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/tacacs
 	else
-		msg_already_running TACACS+
+		msg_already_running "TACACS+"
 	fi
 }
 
 stop() {
 	if [ -f /var/lock/subsys/tacacs ]; then
-		msg_stopping TACACS+
+		msg_stopping "TACACS+"
 		killproc --pidfile /var/run/tac_plus.pid tac_plus
 		rm -f /var/lock/subsys/tacacs /var/run/tac_plus.pid
 	else
-		msg_not_running TACACS+
+		msg_not_running "TACACS+"
 	fi
 }
 
@@ -73,29 +77,31 @@ case "$1" in
   stop)
 	stop
 	;;
+  restart)
+	checkconfig
+	stop
+	start 0
+	;;
+  reload)
+	if [ -f /var/lock/subsys/tacacs ]; then
+		msg_reloading "TACACS+"
+		killproc --pidfile /var/run/tac_plus.pid -SIGUSR1 tac_plus
+	else
+		msg_not_running "TACACS+"
+	fi
+	exit $?
+	;;
   status)
 	status tac_plus
 	exit $?
 	;;
-  restart)
-	stop
-	start
-	;;
-  reload)
-	if [ -f /var/lock/subsys/tacacs ]; then
-		msg_reloading TACACS+
-		killproc --pidfile /var/run/tac_plus.pid -SIGUSR1 tac_plus
-	else
-		msg_not_running TACACS+
-	fi
-	exit $?
-	;;
   checkconfig)
-	checkconfig
+	checkconfig 1
 	;;
   *)
-	echo "Usage: $0 {start|stop|restart|reload|status|checkconfig}"
-	exit 1
+	msg_usage "Usage: $0 {start|stop|restart|reload|status|checkconfig}"
+	exit 3
+	;;
 esac
 
 exit $RETVAL
