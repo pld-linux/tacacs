@@ -34,20 +34,17 @@ tacacs_config="/etc/tacacs/tacacs.cfg"
 
 [ -f "$tacacs_config" ] || exit 0
 
-if [ -z "$TACACS_PORT" ]; then
-	TACACS_PORT=49
-fi
+[ -z "$TACACS_PORT" ] && TACACS_PORT=49
+[ -z "$TACACS_DEBUG_LEVEL" ] && TACACS_DEBUG_LEVEL=0
 
-if [ -z "$TACACS_DEBUG_LEVEL" ]; then
-	TACACS_DEBUG_LEVEL=0
-fi
+checkconfig() {
+	echo "Testing TACACS+ config"
+	/usr/bin/tac_plus -P -C "$tacacs_config" -p "$TACACS_PORT"
+}
 
-RETVAL=0
-# See how we were called.
-case "$1" in
-  start)
+start() {
 	if [ ! -f /var/lock/subsys/tacacs ]; then
-		$0 checkconfig
+		checkconfig
 		msg_starting TACACS+
 		daemon --pidfile /var/run/tac_plus.pid /usr/bin/tac_plus -C "$tacacs_config" -p "$TACACS_PORT" -d "$TACACS_DEBUG_LEVEL"
 		RETVAL=$?
@@ -55,8 +52,9 @@ case "$1" in
 	else
 		msg_already_running TACACS+
 	fi
-	;;
-  stop)
+}
+
+stop() {
 	if [ -f /var/lock/subsys/tacacs ]; then
 		msg_stopping TACACS+
 		killproc --pidfile /var/run/tac_plus.pid tac_plus
@@ -64,14 +62,24 @@ case "$1" in
 	else
 		msg_not_running TACACS+
 	fi
+}
+
+RETVAL=0
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
 	;;
   status)
 	status tac_plus
 	exit $?
 	;;
   restart)
-	$0 stop
-	$0 start
+	stop
+	start
 	;;
   reload)
 	if [ -f /var/lock/subsys/tacacs ]; then
@@ -83,8 +91,7 @@ case "$1" in
 	exit $?
 	;;
   checkconfig)
-	echo "TACACS+ config being testing"
-	/usr/bin/tac_plus -P -C "$tacacs_config" -p "$TACACS_PORT"
+	checkconfig
 	;;
   *)
 	echo "Usage: $0 {start|stop|restart|reload|status|checkconfig}"
