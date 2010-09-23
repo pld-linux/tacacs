@@ -8,6 +8,8 @@
 # processname:	tac_plus
 # config:	/etc/tacacs/tacacs.cfg
 # pidfile:	/var/run/tacacs.pid
+#
+# $Id$
 
 # Source function library
 . /etc/rc.d/init.d/functions
@@ -30,22 +32,24 @@ fi
 
 tacacs_config="/etc/tacacs/tacacs.cfg"
 
-[ -f $tacacs_config ] || exit 0
+[ -f "$tacacs_config" ] || exit 0
 
-if [ -z $TACACS_PORT ]; then
-    TACACS_PORT=49
+if [ -z "$TACACS_PORT" ]; then
+	TACACS_PORT=49
 fi
 
-if [ -z $TACACS_DEBUG_LEVEL ]; then
-    TACACS_DEBUG_LEVEL=0
+if [ -z "$TACACS_DEBUG_LEVEL" ]; then
+	TACACS_DEBUG_LEVEL=0
 fi
 
+RETVAL=0
 # See how we were called.
 case "$1" in
   start)
 	if [ ! -f /var/lock/subsys/tacacs ]; then
+		$0 checkconfig
 		msg_starting TACACS+
-		daemon tac_plus -C $tacacs_config  -d $TACACS_DEBUG_LEVEL -p $TACACS_PORT
+		daemon --pidfile /var/run/tac_plus.pid /usr/bin/tac_plus -C "$tacacs_config" -p "$TACACS_PORT" -d "$TACACS_DEBUG_LEVEL"
 		RETVAL=$?
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/tacacs
 	else
@@ -55,8 +59,8 @@ case "$1" in
   stop)
 	if [ -f /var/lock/subsys/tacacs ]; then
 		msg_stopping TACACS+
-		killproc tac_plus
-		rm -f /var/lock/subsys/tacacs
+		killproc --pidfile /var/run/tac_plus.pid tac_plus
+		rm -f /var/lock/subsys/tacacs /var/run/tac_plus.pid
 	else
 		msg_not_running TACACS+
 	fi
@@ -69,7 +73,6 @@ case "$1" in
 	$0 stop
 	$0 start
 	;;
-
   reload)
 	if [ -f /var/lock/subsys/tacacs ]; then
 		msg_reloading TACACS+
@@ -79,13 +82,13 @@ case "$1" in
 	fi
 	exit $?
 	;;
-  test)
+  checkconfig)
 	echo "TACACS+ config being testing"
-	/usr/bin/tac_plus -P -C $tacacs_config -p $TACACS_PORT
+	/usr/bin/tac_plus -P -C "$tacacs_config" -p "$TACACS_PORT"
 	;;
   *)
-	echo "Usage: %s {start|stop|status|restart|reload|test}"
+	echo "Usage: $0 {start|stop|restart|reload|status|checkconfig}"
 	exit 1
 esac
 
-exit 0
+exit $RETVAL
