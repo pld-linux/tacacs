@@ -87,7 +87,7 @@ Statyczna biblioteka tacacs+.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_sysconfdir}/%{name},/etc/{logrotate.d,pam.d,rc.d/init.d,sysconfig}}
+install -d $RPM_BUILD_ROOT{%{_sysconfdir}/%{name},/etc/{logrotate.d,pam.d,rc.d/init.d,sysconfig},/var/log}
 
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
@@ -98,6 +98,10 @@ install %{SOURCE3} $RPM_BUILD_ROOT/etc/pam.d/tac_plus
 install %{SOURCE6} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
 install %{SOURCE8} $RPM_BUILD_ROOT/etc/sysconfig/%{name}
 
+for n in tac_plus.acct tac_plus.log tacwho.log; do
+	:> $RPM_BUILD_ROOT/var/log/$n
+done
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -106,6 +110,13 @@ rm -rf $RPM_BUILD_ROOT
 %useradd -u 29 -d %{_localstatedir} -s /bin/false -M -r -c "%{name}" -g radius radius
 
 %post
+/sbin/ldconfig
+for n in /var/log/{tac_plus.acct,tac_plus.log,tacwho.log}; do
+	[ -f $n ] && continue
+	touch $n
+	chmod 660 $n
+	chown root:radius $n
+done
 /sbin/chkconfig --add %{name}
 %service %{name} restart
 
@@ -116,6 +127,7 @@ if [ "$1" = "0" ]; then
 fi
 
 %postun
+/sbin/ldconfig
 if [ "$1" = "0" ]; then
 	%userremove radius
 	%groupremove radius
@@ -136,6 +148,7 @@ fi
 %attr(755,root,root) %{_libdir}/libtacacs.so.1.*.*
 %attr(755,root,root) %ghost %{_libdir}/libtacacs.so.?
 %{_datadir}/%{name}+
+%attr(660,root,radius) %ghost /var/log/tac*
 
 %files devel
 %defattr(644,root,root,755)
