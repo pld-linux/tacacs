@@ -1,0 +1,5 @@
+- use radius/radius, enabled finger and maxsess,
+- packaged COPYING and FAQ, narrower wildcards, 640 for logrotate script,
+  restored -devel and -static (with .la file moved to the latter),
+- S/KEY won't compile (dynamic with proper _libdir), BR: libtool, cosmetics
+- shouldn't this be named 'tacacs+'?
