@@ -6,12 +6,12 @@
 Summary:	TACACS+ daemon
 Summary(pl.UTF-8):	Demon TACACS+
 Name:		tacacs
-Version:	F4.0.4.19
+Version:	F4.0.4.27a
 Release:	1
 License:	BSD-like, GPL
 Group:		Networking/Daemons
 Source0:	ftp://ftp.shrubbery.net/pub/tac_plus/tacacs+-%{version}.tar.gz
-# Source0-md5:	4979127f60f1a83c55e8a7cec285a797
+# Source0-md5:	55c9aaac4ea5263438919594bf537666
 Source1:	%{name}.cfg
 Source2:	%{name}.init
 Source3:	%{name}.pam
@@ -157,8 +157,6 @@ fi
 %defattr(644,root,root,755)
 %attr(755,root,root) %{_libdir}/libtacacs.so
 %{_includedir}/tacacs.h
-# doesn't it conflict with erlang?
-%{_mandir}/man3/regexp.3*
 
 %files static
 %defattr(644,root,root,755)
