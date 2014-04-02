@@ -38,6 +38,9 @@ Requires(pre):	fileutils
 Requires:	rc-scripts
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
+# library use symbols provided by the binary
+%define		skip_post_check_so	.*lib.*/libtacacs.so.*
+
 %description
 TACACS+ daemon using with Cisco's NASs (or other vendors) for AAA
 (Authentication, Authorization and Accounting) propose.
